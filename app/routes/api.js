@@ -106,7 +106,7 @@ module.exports = function(app, express) {
                 res.send(err);
                 return;
             }
-            var token = createTokenCompany(company);
+            var token = createTokenCompany(student);
             res.json({
                 message: "Student has been added! successfully Login",
                 success: true,

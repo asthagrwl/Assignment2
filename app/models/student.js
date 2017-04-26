@@ -1,5 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+var bcrypt = require('bcrypt-nodejs');
+
 var StudentSchema = new Schema({
 
 	rollNo: {type : String, required : true, index: {unique : true}},
