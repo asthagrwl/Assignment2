@@ -7,7 +7,7 @@ var config = require('../../config');
 var secretKey = config.secretKey;
 var jsonwebtoken = require('jsonwebtoken');
 
-function createToken(company) {
+function createTokenCompany(company) {
     var token = jsonwebtoken.sign({
         id: company._id,
         name: company.name,
@@ -20,15 +20,15 @@ function createToken(company) {
     return token;
 }
 
-function createToken(student) {
+function createTokenStudent(student) {
     var token = jsonwebtoken.sign({
         id: student._id,
         name: student.name,
         rollNo: student.rollNo,
-		password: student.password,
-		email: student.email,
-		branch: student.branch,
-		pointer: student.pointer
+	password: student.password,
+	email: student.email,
+	branch: student.branch,
+	pointer: student.pointer
     }, secretKey, {
         expiresIn: 1440
     });
@@ -36,7 +36,7 @@ function createToken(student) {
     return token;
 }
 
-function createToken(admin) {
+function createTokenAdmin(admin) {
     var token = jsonwebtoken.sign({
         id: admin._id,
         username: admin.username
@@ -80,8 +80,13 @@ module.exports = function(app, express) {
                 res.send(err);
                 return;
             }
-            res.json({ message: 'Comapany has been added!' });
+	    var token = createTokenCompany(company);
+            res.json({ message: "Comapany has been added! successfully Login"
+		       sucess: true,
+            	       token: token
+	    });
         });
+	
     });
 
     api.post('/student_signup', function(req, res) {
@@ -100,8 +105,13 @@ module.exports = function(app, express) {
                 res.send(err);
                 return;
             }
-            res.json({ message: 'Student has been added!' });
+	    var token = createTokenCompany(company);
+            res.json({ message: "Student has been added! successfully Login"
+		       sucess: true,
+            	       token: token
+	    });
         });
+		    
     });
 
 
@@ -117,7 +127,7 @@ module.exports = function(app, express) {
     });
 
     api.post('/company_login', function(req, res) {
-        Company.findOne({
+        company.findOne({
            	email: req.body.email
         }).select('password').exec(function(err, company) {
             if (err) throw err;
@@ -129,7 +139,7 @@ module.exports = function(app, express) {
                     res.send({ message: "Invalid Password..!" });
                 } else {
                     // token
-                    var token = createToken(Company);
+                    var token = createTokenCompany(company);
                     res.json({
                         sucess: true,
                         message: "successfully Login",
@@ -153,7 +163,7 @@ module.exports = function(app, express) {
                     res.send({ message: "Invalid Password..!" });
                 } else {
                     // token
-                    var token = createToken(student);
+                    var token = createTokenStudent(student);
                     res.json({
                         sucess: true,
                         message: "successfully Login",
@@ -163,6 +173,30 @@ module.exports = function(app, express) {
             }
         });
     });
+	
+	api.post('/admin_login', function(req, res) {
+		admin.findOne({
+			username: req.body.username
+		}).select('password').exec(function(err, admin) {
+		    if (err) throw err;
+		    if (!admin) {
+			res.send({ message: "Admin does not exist" });
+		    } else if (admin) {
+			var validPass = admin.comparePassword(req.body.password);
+			if (!validPass) {
+			    res.send({ message: "Invalid Password..!" });
+			} else {
+			    // token
+			    var token = createTokenAdmin(admin);
+			    res.json({
+				sucess: true,
+				message: "successfully Login",
+				token: token
+			    });
+			}
+		    }
+		});
+	    });
 
     //middleware
     api.use(function(req, res, next) {
