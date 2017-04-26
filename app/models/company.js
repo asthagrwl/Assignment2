@@ -1,7 +1,8 @@
 var mongoose = require('mongoose');
-var bcrypt = require('bcrypt');
-
 var Schema = mongoose.Schema;
+var bcrypt = require('bcrypt-nodejs');
+
+
 var CompanySchema = new Schema({
     name: String,
     about: String,
@@ -13,6 +14,7 @@ CompanySchema.pre('save', function(next) {
     var company = this;
     if (!company.isModified('password'))
         return next();
+      console.log(company.password)
     bcrypt.hash(company.password, null, null, function(err, hash) {
         if (err)
             return next(err);
