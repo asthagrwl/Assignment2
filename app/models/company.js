@@ -22,6 +22,7 @@ CompanySchema.pre('save', function(next) {
         next();
     });
 });
+
 CompanySchema.methods.comparePassword = function(password) {
     var company = this;
     return bcrypt.compareSync(password, company.password);

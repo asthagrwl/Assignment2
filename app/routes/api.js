@@ -2,7 +2,6 @@ var Company = require('../models/company');
 var Student = require('../models/student');
 var Position = require('../models/position');
 var Application = require('../models/application');
-var Admin = require('../models/admin');
 var config = require('../../config');
 var secretKey = config.secretKey;
 var jsonwebtoken = require('jsonwebtoken');
@@ -35,36 +34,9 @@ function createTokenStudent(student) {
     return token;
 }
 
-function createTokenAdmin(admin) {
-    var token = jsonwebtoken.sign({
-        id: admin._id,
-        username: admin.username
-    }, secretKey, {
-        expiresIn: 1440
-    });
-
-    return token;
-}
-
 module.exports = function(app, express) {
 
     var api = express.Router();
-
-    api.post('/admin_signup', function(req, res) {
-
-        var admin = new Admin({
-            username: req.body.username,
-            password: req.body.password
-
-        });
-        admin.save(function(err) {
-            if (err) {
-                res.send(err);
-                return;
-            }
-            res.json({ message: 'Welcome Admin..!!' });
-        });
-    });
 
     api.post('/company_signup', function(req, res) {
 
@@ -116,22 +88,19 @@ module.exports = function(app, express) {
 
     });
 
-
-
-
     api.post('/company_login', function(req, res) {
-        company.findOne({
+        Company.findOne({
             email: req.body.email
-        }).select('password').exec(function(err, company) {
+        }).select('password').exec(function(err, Company) {
             if (err) throw err;
-            if (!company) {
+            if (!Company) {
                 res.send({ message: "company does not exist" });
-            } else if (company) {
-                var validPass = company.comparePassword(req.body.password);
+            } else if (Company) {
+                var validPass = Company.comparePassword(req.body.password);
                 if (!validPass) {
                     res.send({ message: "Invalid Password..!" });
                 } else {
-                    var token = createTokenCompany(company);
+                    var token = createTokenCompany(Company);
                     res.json({
                         sucess: true,
                         message: "successfully Login",
@@ -143,44 +112,20 @@ module.exports = function(app, express) {
     });
 
     api.post('/student_login', function(req, res) {
-        student.findOne({
+        Student.findOne({
             rollNo: req.body.rollNo
-        }).select('password').exec(function(err, student) {
+        }).select('password').exec(function(err, Student) {
             if (err) throw err;
-            if (!student) {
+            if (!Student) {
                 res.send({ message: "student does not exist" });
-            } else if (student) {
-                var validPass = student.comparePassword(req.body.password);
+            } else if (Student) {
+                var validPass = Student.comparePassword(req.body.password);
                 if (!validPass) {
                     res.send({ message: "Invalid Password..!" });
                 } else {
-                    var token = createTokenStudent(student);
+                    var token = createTokenStudent(Student);
                     res.json({
-                        sucess: true,
-                        message: "successfully Login",
-                        token: token
-                    });
-                }
-            }
-        });
-    });
-
-    api.post('/admin_login', function(req, res) {
-        admin.findOne({
-            username: req.body.username
-        }).select('password').exec(function(err, admin) {
-            if (err) throw err;
-            if (!admin) {
-                res.send({ message: "Admin does not exist" });
-            } else if (admin) {
-                var validPass = admin.comparePassword(req.body.password);
-                if (!validPass) {
-                    res.send({ message: "Invalid Password..!" });
-                } else {
-                    // token
-                    var token = createTokenAdmin(admin);
-                    res.json({
-                        sucess: true,
+                        success: true,
                         message: "successfully Login",
                         token: token
                     });
@@ -209,8 +154,61 @@ module.exports = function(app, express) {
         }
     });
 
-    api.post('/position', function(req, res) {
+    api.route('/student_home')
+        .get( function(req, res) {
+            Application.find({}, function(err, Application) {
+                if (err) {
+                    res.send(err);
+                    return;
+                }
+                res.json(Application);
+            });
+        })
 
+        .post( function(req, res) {
+
+            var application = new Application({
+                rollNo: req.decoded.rollNo,
+                email: req.decoded.email,
+                branch: req.decoded.branch,
+                pointer: req.decoded.pointer,
+                position: req.body.position,
+                // companyName: req.body.companyName,
+                // comapanyId: req.body.comapanyId
+
+            });
+            application.save(function(err) {
+                if (err) {
+                    res.send(err);
+                    return;
+                }
+                res.json({ message: 'Application added successfully..!' });
+            });
+        });
+
+    api.post('/unregister_student',function(req,res){
+            var student = new Student({
+                rollNo: req.decoded.rollNo,
+                position: req.body.position
+            });
+            Application.remove(function(err) {
+                if (err) {
+                    res.send(err);
+                    return;
+                }
+
+                {position: Application.position}
+
+                res.json({ message : 'Student Deleted successfully..!'});
+                });
+        });
+
+       
+
+
+
+    api.route('/company_home')
+        .post(function(req, res) {
         var position = new Position({
             companyId: req.decoded.id,
             position: req.body.position,
@@ -227,70 +225,19 @@ module.exports = function(app, express) {
             }
             res.json({ message: 'Position added successfully..!' });
         });
-    });
-
-    api.get('/companies', function(req, res) {
-        Company.find({}, function(err, company) {
-            if (err) {
-                res.send(err);
-                return;
-            }
-            res.json(company);
-        });
-    });
-
-    api.post('/apply', function(req, res) {
-
-        var application = new Application({
-            rollNo: req.decoded.rollNo,
-            email: req.decoded.email,
-            branch: req.decoded.branch,
-            pointer: req.decoded.pointer,
-            position: req.body.position,
-            companyName: req.body.companyName,
-            comapanyId: req.body.comapanyId
-
-        });
-        application.save(function(err) {
-            if (err) {
-                res.send(err);
-                return;
-            }
-            res.json({ message: 'Application added successfully..!' });
-        });
-    });
-
-
-
-    api.route('/company_home')
-        .post(function(req, res) {
-            var company = new Company({
-                creator: req.decoded.id,
-                content: req.body.content,
-            });
-            story.save(function(err) {
-                if (err) {
-                    res.send(err);
-                    return
-                }
-                res.json({ message: "New Story Created!" });
-
-            });
-        })
+    })
 
     .get(function(req, res) {
-        Story.find({ creator: req.decoded.id }, function(err, stories) {
+        Position.find({ companyId: req.decoded.id }, function(err, position ) {
             if (err) {
                 res.send(err);
                 return;
             }
-            res.json(stories);
+            res.json(position);
         });
     });
 
-    api.get('/me', function(req, res) {
-        res.json(req.decoded);
-    });
+    
 
     return api
 }
