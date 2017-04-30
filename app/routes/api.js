@@ -186,21 +186,16 @@ module.exports = function(app, express) {
             });
         });
 
-    api.post('/unregister_student',function(req,res){
-            var student = new Student({
-                rollNo: req.decoded.rollNo,
-                position: req.body.position
-            });
-            Application.remove(function(err) {
-                if (err) {
-                    res.send(err);
-                    return;
-                }
-
-                {position: Application.position}
-
-                res.json({ message : 'Student Deleted successfully..!'});
-                });
+    api.route('/unregister_student')
+        .post(function(req,res){
+           
+            Application.deleteOne({ rollNo: req.body.rollNo , position: req.body.position }, function(err, application ) {
+            if (err) {
+                res.send(err);
+                return;
+            }
+            res.json({ message: "student deleted successfully..!"});
+        });
         });
 
        
